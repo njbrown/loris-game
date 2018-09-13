@@ -12,11 +12,15 @@ find_package(SDL2_image REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR}
                     ${SDL2_IMAGE_INCLUDE_DIR}
                     #${SDL2_TTF_INCLUDE_DIR}
+                    "loris/include"
 					)
+
+add_subdirectory(loris)
 
 add_executable(Game main.cpp)
 
 target_link_libraries(Game ${SDL2_LIBRARY}
                              ${SDL2_IMAGE_LIBRARIES}
                              #${SDL2_TTF_LIBRARIES}
+                             loris
 							 )
