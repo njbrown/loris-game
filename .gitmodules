@@ -1,0 +1,3 @@
+[submodule "loris"]
+	path = loris
+	url = https://github.com/njbrown/loris.git
