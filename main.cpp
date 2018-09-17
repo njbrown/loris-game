@@ -15,6 +15,8 @@ SDL_Renderer *renderer;
 struct Image
 {
 	SDL_Texture* sprite;
+	int width;
+	int height;
 	int refCount;
 };
 
@@ -38,6 +40,8 @@ public:
 		else
 		{
 			//Create texture from surface pixels
+			image->width = loadedSurface->w;
+			image->height = loadedSurface->h;
 			newTexture = SDL_CreateTextureFromSurface(renderer, loadedSurface);
 			if (newTexture == NULL)
 			{
@@ -167,8 +171,8 @@ Value Canvas_DrawImage(VirtualMachine* vm, Object* self)
 	SDL_Rect rect;
 	rect.x = x;
 	rect.y = y;
-	//rect.w = img->sprite->w;
-	//rect.h = img->sprite->h;
+	rect.w = img->width;
+	rect.h = img->height;
 
 	//SDL_BlitSurface(img->sprite, NULL, screen, &rect);
 	SDL_RenderCopy(renderer, img->sprite, nullptr, &rect);
@@ -402,7 +406,7 @@ int main(int argc, char *argv[])
 		.Build();
 
 	//add scripts
-	scriptMan.AddSourceFile("scripts/game.ds");
+	scriptMan.AddSourceFile("assets/game.ls");
 
 	//add classes
 	scriptMan.AddClass(assetsClass);
@@ -446,10 +450,11 @@ int main(int argc, char *argv[])
 				return 0;
 				break;
 			case SDL_KEYDOWN:
-				Input::curKeys[e.key.keysym.sym] = true;
+				//std::cout << e.key.keysym.scancode;
+				Input::curKeys[e.key.keysym.scancode] = true;
 				break;
 			case SDL_KEYUP:
-				Input::curKeys[e.key.keysym.sym] = false;
+				Input::curKeys[e.key.keysym.scancode] = false;
 				break;
 			default:
 				break;
