@@ -6,10 +6,55 @@
 
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
 
 loris::Class* imageClass;
 SDL_Surface* screen;
 SDL_Renderer *renderer;
+
+struct Image
+{
+	SDL_Texture* sprite;
+	int refCount;
+};
+
+class Assets
+{
+	unordered_map<string, Image*> imageMap;
+public:
+	static Image* LoadImage(string imgName)
+	{
+		Image* image = new Image;
+
+		//The final texture
+		SDL_Texture* newTexture = NULL;
+
+		//Load image at specified path
+		SDL_Surface* loadedSurface = IMG_Load(imgName.c_str());
+		if (loadedSurface == NULL)
+		{
+			printf("Unable to load image %s! SDL_image Error: %s\n", imgName.c_str(), IMG_GetError());
+		}
+		else
+		{
+			//Create texture from surface pixels
+			newTexture = SDL_CreateTextureFromSurface(renderer, loadedSurface);
+			if (newTexture == NULL)
+			{
+				printf("Unable to create texture from %s! SDL Error: %s\n", imgName.c_str(), SDL_GetError());
+			}
+
+			//Get rid of old loaded surface
+			SDL_FreeSurface(loadedSurface);
+		}
+
+		image->sprite = newTexture;
+		assert(image->sprite != NULL);
+
+		return image;
+	}
+};
+
 
 class Input
 {
@@ -61,12 +106,6 @@ public:
 bool* Input::prevKeys = 0;
 bool* Input::curKeys = 0;
 
-
-struct Image
-{
-	SDL_Texture* sprite;
-	int refCount;
-};
 
 #define EXPECT_STRING(vm,index) if(vm->GetArg(index).type!=ValueType::String){vm->RaiseError("expected a string argument");return Value::CreateNull();}
 #define EXPECT_OBJECT(vm,index) if(vm->GetArg(index).type!=ValueType::Object){vm->RaiseError("expected an object");return Value::CreateNull();}
@@ -179,42 +218,7 @@ Value Input_IsKeyUp(VirtualMachine* vm, Object* self)
 	return Value::CreateBool(res);
 }
 
-class Assets
-{
-	unordered_map<string, Image*> imageMap;
-public:
-	static Image* LoadImage(string imgName)
-	{
-		Image* image = new Image;
 
-		//The final texture
-		SDL_Texture* newTexture = NULL;
-
-		//Load image at specified path
-		SDL_Surface* loadedSurface = IMG_Load(imgName.c_str());
-		if (loadedSurface == NULL)
-		{
-			printf("Unable to load image %s! SDL_image Error: %s\n", imgName.c_str(), IMG_GetError());
-		}
-		else
-		{
-			//Create texture from surface pixels
-			newTexture = SDL_CreateTextureFromSurface(renderer, loadedSurface);
-			if (newTexture == NULL)
-			{
-				printf("Unable to create texture from %s! SDL Error: %s\n", imgName.c_str(), SDL_GetError());
-			}
-
-			//Get rid of old loaded surface
-			SDL_FreeSurface(loadedSurface);
-		}
-
-		image->sprite = newTexture;
-		assert(image->sprite != NULL);
-
-		return image;
-	}
-};
 
 
 void PrintError(loris::Error e)
