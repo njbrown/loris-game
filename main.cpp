@@ -8,6 +8,59 @@
 #include <sstream>
 
 
+
+class Input
+{
+public:
+	static bool* prevKeys;
+	static bool* curKeys;
+
+	static void Init()
+	{
+		prevKeys = new bool[323];
+		curKeys = new bool[323];
+		for (int i = 0; i<323; i++)
+		{
+			prevKeys[i] = false;
+			curKeys[i] = false;
+		}
+	}
+
+	static void PreUpdate()
+	{
+		for (int i = 0; i<323; i++)
+		{
+			prevKeys[i] = curKeys[i];
+			//curKeys[i]=false;
+		}
+	}
+
+	static bool IsKeyDown(int index)
+	{
+		return curKeys[index];
+	}
+
+	static bool IsKeyUp(int index)
+	{
+		return !curKeys[index];
+	}
+
+	static bool IsKeyPressed(int index)
+	{
+		return !prevKeys[index] && curKeys[index];
+	}
+
+	static bool IsKeyReleased(int index)
+	{
+		return prevKeys[index] && !curKeys[index];
+	}
+};
+
+bool* Input::prevKeys = 0;
+bool* Input::curKeys = 0;
+
+
+
 void PrintError(loris::Error e)
 {
 	cout << "error: " << e.filename << ":" << e.line << ": " << e.message << endl;
