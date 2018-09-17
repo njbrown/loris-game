@@ -425,16 +425,41 @@ int main(int argc, char *argv[])
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
 
+	Input::Init();
+	scriptMan.RunInit();
+
+	int lastTime = SDL_GetTicks();
 	bool running = true;
 	SDL_Event e;
 	while (running) {
+
+		Input::PreUpdate();
 		while (SDL_PollEvent(&e) != 0) {
-			if (e.type == SDL_QUIT) {
+			switch (e.type)
+			{
+			case SDL_QUIT:
 				running = false;
+				return 0;
+				break;
+			case SDL_KEYDOWN:
+				Input::curKeys[e.key.keysym.sym] = true;
+				break;
+			case SDL_KEYUP:
+				Input::curKeys[e.key.keysym.sym] = false;
+				break;
+			default:
+				break;
 			}
 		}
 
+		int curTime = SDL_GetTicks();
+		float dt = (curTime - lastTime) / 1000.0f;
+		lastTime = curTime;
+
+		scriptMan.RunUpdate(dt);
+
 		SDL_RenderClear(renderer);
+		scriptMan.RunDraw();
 		SDL_RenderPresent(renderer);
 	}
 
