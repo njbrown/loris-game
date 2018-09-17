@@ -25,21 +25,8 @@ target_link_libraries(Game ${SDL2_LIBRARY}
                              loris
 							 )
 
-if(NOT CMAKE_BUILD_TYPE)
-    message(STATUS "Setting build type to 'Debug' as none was specified.")
-    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
-    # Set the possible values of build type for cmake-gui
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
-
-# COPY ASSETS TO OUTPUT FOLDER
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    set(DestDir ${CMAKE_BINARY_DIR})
-else()
-    set(DestDir ${CMAKE_BINARY_DIR})
-endif()
 add_custom_command(
 		TARGET Game POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory
 				${PROJECT_SOURCE_DIR}/assets
-				${DestDir}/assets)
+				${CMAKE_BINARY_DIR}/assets)
