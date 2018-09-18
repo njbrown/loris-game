@@ -17,7 +17,10 @@ include_directories(${SDL2_INCLUDE_DIR}
 
 add_subdirectory(loris)
 
-add_executable(Game main.cpp)
+set(SCRIPTS
+	assets/game.ls)
+
+add_executable(Game main.cpp ${SCRIPTS})
 
 target_link_libraries(Game ${SDL2_LIBRARY}
                              ${SDL2_IMAGE_LIBRARIES}

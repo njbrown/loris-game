@@ -66,24 +66,55 @@ public:
 	static bool* prevKeys;
 	static bool* curKeys;
 
+	static bool* prevMouseButtons;
+	static bool* curMouseButtons;
+
+	static int prevMouseX;
+	static int prevMouseY;
+	static int curMouseX;
+	static int curMouseY;
+
 	static void Init()
 	{
-		prevKeys = new bool[323];
-		curKeys = new bool[323];
-		for (int i = 0; i<323; i++)
+		prevKeys = new bool[SDL_NUM_SCANCODES];
+		curKeys = new bool[SDL_NUM_SCANCODES];
+		for (int i = 0; i<SDL_NUM_SCANCODES; i++)
 		{
 			prevKeys[i] = false;
 			curKeys[i] = false;
 		}
+
+		prevMouseButtons = new bool[5];
+		curMouseButtons = new bool[5];
+		for (int i = 0; i<5; i++)
+		{
+			prevMouseButtons[i] = false;
+			curMouseButtons[i] = false;
+		}
+
+		prevMouseX = 0;
+		prevMouseY = 0;
+		curMouseX = 0;
+		curMouseY = 0;
 	}
 
 	static void PreUpdate()
 	{
-		for (int i = 0; i<323; i++)
+		for (int i = 0; i<SDL_NUM_SCANCODES; i++)
 		{
 			prevKeys[i] = curKeys[i];
 			//curKeys[i]=false;
 		}
+
+		for (int i = 0; i<5; i++)
+		{
+			prevMouseButtons[i] = curMouseButtons[i];
+			//curKeys[i]=false;
+		}
+
+		prevMouseX = curMouseX;
+		prevMouseY = curMouseY;
+		SDL_GetMouseState(&curMouseX, &curMouseY);
 	}
 
 	static bool IsKeyDown(int index)
@@ -105,11 +136,38 @@ public:
 	{
 		return prevKeys[index] && !curKeys[index];
 	}
+
+	static bool IsMouseButtonDown(int index)
+	{
+		return curMouseButtons[index];
+	}
+
+	static bool IsMouseButtonUp(int index)
+	{
+		return !curMouseButtons[index];
+	}
+
+	static bool IsMouseButtonPressed(int index)
+	{
+		return !prevMouseButtons[index] && curMouseButtons[index];
+	}
+
+	static bool IsMouseButtonReleased(int index)
+	{
+		return prevMouseButtons[index] && !curMouseButtons[index];
+	}
 };
 
 bool* Input::prevKeys = 0;
 bool* Input::curKeys = 0;
 
+bool* Input::prevMouseButtons = 0;
+bool* Input::curMouseButtons = 0;
+
+int Input::prevMouseX = 0;
+int Input::prevMouseY = 0;
+int Input::curMouseX = 0;
+int Input::curMouseY = 0;
 
 #define EXPECT_STRING(vm,index) if(vm->GetArg(index).type!=ValueType::String){vm->RaiseError("expected a string argument");return Value::CreateNull();}
 #define EXPECT_OBJECT(vm,index) if(vm->GetArg(index).type!=ValueType::Object){vm->RaiseError("expected an object");return Value::CreateNull();}
@@ -223,12 +281,54 @@ Value Input_IsKeyUp(VirtualMachine* vm, Object* self)
 }
 
 
+bool Input_IsMouseButtonDown(int key)
+{
+	return Input::IsMouseButtonDown(key);
+}
 
+bool Input_IsMouseButtonUp(int key)
+{
+	return Input::IsMouseButtonUp(key);
+}
+
+bool Input_IsMouseButtonPressed(int key)
+{
+	return Input::IsMouseButtonPressed(key);
+}
+
+bool Input_IsMouseButtonReleased(int key)
+{
+	return Input::IsMouseButtonReleased(key);
+}
+
+int Input_GetMouseX(int key)
+{
+	return Input::curMouseX;
+}
+
+int Input_GetMouseY(int key)
+{
+	return Input::curMouseY;
+}
+
+// autobound functions cannot return void for now
+int Input_ShowCursor()
+{
+	SDL_ShowCursor(true);
+	return 0;
+}
+
+int Input_HideCursor()
+{
+	SDL_ShowCursor(false);
+	return 0;
+}
 
 void PrintError(loris::Error e)
 {
 	cout << "error: " << e.filename << ":" << e.line << ": " << e.message << endl;
 }
+
 
 string ReadFile(const char *filename)
 {
@@ -280,7 +380,7 @@ public:
 
 	bool CompileScripts()
 	{
-		if (compiler.Compile())
+		if (compiler.Compile(true))// true gives line numbers in error outputs
 		{
 			return true;
 		}
@@ -396,7 +496,16 @@ int main(int argc, char *argv[])
 	Class* inputClass = loris::CreateClass("Input")
 		.StaticMethod("isKeyDown", Input_IsKeyDown)/* bool isKeyDown(index) */
 		.StaticMethod("isKeyUp", Input_IsKeyUp)/* bool isKeyUp(index) */
+		.StaticMethod("isMouseDown", loris::Def(Input_IsMouseButtonDown))/* bool isMouseDown(index) */
+		.StaticMethod("isMouseUp", loris::Def(Input_IsMouseButtonUp))/* bool isMouseUp(index) */
+		.StaticMethod("isMousePressed", loris::Def(Input_IsMouseButtonPressed))/* bool isMousePressed(index) */
+		.StaticMethod("isMouseReleased", loris::Def(Input_IsMouseButtonReleased))/* bool isMouseReleased(index) */
+		.StaticMethod("getMouseX", loris::Def(Input_GetMouseX))/* number getMouseX() */
+		.StaticMethod("getMouseY", loris::Def(Input_GetMouseY))/* number getMouseY() */
+		.StaticMethod("showCursor", loris::Def(Input_ShowCursor))/* void showCursor() */
+		.StaticMethod("hideCursor", loris::Def(Input_HideCursor))/* void hideCursor() */
 		.Build();
+
 
 	//global
 	imageClass = loris::CreateClass("Image")
@@ -431,7 +540,7 @@ int main(int argc, char *argv[])
 	IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG | IMG_INIT_TIF | IMG_INIT_WEBP);
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+	SDL_SetRenderDrawColor(renderer,255, 255, 255, SDL_ALPHA_OPAQUE);
 
 	Input::Init();
 	scriptMan.RunInit();
@@ -455,6 +564,12 @@ int main(int argc, char *argv[])
 				break;
 			case SDL_KEYUP:
 				Input::curKeys[e.key.keysym.scancode] = false;
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				Input::curMouseButtons[e.button.button] = true;
+				break;
+			case SDL_MOUSEBUTTONUP:
+				Input::curMouseButtons[e.button.button] = false;
 				break;
 			default:
 				break;

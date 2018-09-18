@@ -1,10 +1,22 @@
-
+// use scancodes instead of keycodes
 class Keys
 {
 	static var Up = 82;
 	static var Down = 81;
 	static var Right = 79;
 	static var Left = 80;
+
+	static var W = 26;
+	static var A = 4;
+	static var S = 22;
+	static var D = 7;
+}
+
+class Mouse
+{
+	static var Left = 1;
+	static var Middle = 2;
+	static var Right = 3;
 }
 
 class Vector2
@@ -18,6 +30,17 @@ class Vector2
 	def copy()
 	{
 		return new Vector2(self.x,self.y);
+	}
+
+	def add(other)
+	{
+		self.x = self.x + other.x;
+		self.y = self.y + other.y;
+	}
+
+	static def add(a, b)
+	{
+		return new Vector2(a.x + b.x, a.y + b);
 	}
 }
 
@@ -117,6 +140,19 @@ class GameObject
 	}
 }
 
+class Cursor
+{
+	Cursor()
+	{
+		self.image = Assets.loadImage("assets/images/cursor.png");
+	}
+
+	def draw()
+	{
+		Canvas.drawImage(self.image, Input.getMouseX() - 14, Input.getMouseY() - 14);
+	}
+}
+
 class Shooter extends GameObject
 {
 	Shooter()
@@ -131,24 +167,24 @@ class Shooter extends GameObject
 	{
 		var p = self.pos;
 
-		if(Input.isKeyDown(Keys.Left))
+		if(Input.isKeyDown(Keys.A))
 		{
 			p.x = p.x-200*dt;
-			self.image = self.leftImage;
+			//self.image = self.leftImage;
 		}
 
-		if(Input.isKeyDown(Keys.Right))
+		if(Input.isKeyDown(Keys.D))
 		{
 			p.x = p.x+200*dt;
-			self.image = self.rightImage;
+			//self.image = self.rightImage;
 		}
 
-		if(Input.isKeyDown(Keys.Up))
+		if(Input.isKeyDown(Keys.W))
 		{
 			p.y = p.y-200*dt;
 		}
 
-		if(Input.isKeyDown(Keys.Down))
+		if(Input.isKeyDown(Keys.S))
 		{
 			p.y = p.y+200*dt;
 		}
@@ -156,6 +192,13 @@ class Shooter extends GameObject
 		// update rect
 		self.rect.x = p.x;
 		self.rect.y = p.y;
+
+		// update looking dir
+		if (Input.getMouseX() < p.x) {
+			self.image = self.leftImage;
+		} else {
+			self.image = self.rightImage;
+		}
 	}
 }
 
@@ -183,12 +226,14 @@ class Bullet extends GameObject
 	Bullet()
 	{
 		self.GameObject("assets/images/bullet.png");
+		self.dir = new Vector2(0,0);
 	}
 
 	def update(dt)
 	{
 		var p = self.pos;
-		p.x = p.x+50*dt;
+		p.x = p.x + self.dir.x * dt;
+		p.y = p.y + self.dir.y * dt;
 	}
 }
 
@@ -196,16 +241,20 @@ class Game
 {
 	def init()
 	{
+		Input.hideCursor();
+
+		self.cursor = new Cursor();
 		self.obj = new Shooter();
+		self.mobs = array();
 		self.bullets = array();
 
 		var i = 0;
-		while(i<200)
+		while(i<5)
 		{
 			var slime = new Slime();
 			slime.pos.x = 600;
 			slime.pos.y = i*80;
-			self.bullets.add(slime);
+			self.mobs.add(slime);
 
 			i = i+1;
 		}
@@ -214,20 +263,38 @@ class Game
 	def update(dt)
 	{
 		self.obj.update(dt);
-		var bullets = self.bullets;
+
+		if (Input.isMousePressed(Mouse.Left)) {
+			var bt = new Bullet();
+			bt.pos = self.obj.pos.copy();
+			bt.dir = new Vector2(10,0);
+
+			self.bullets.add(bt);
+			print("firing bullet", bt);
+		}
+
+		var mobs = self.mobs;
 
 		var i = 0;
-		while(i<bullets.size())
+		while(i<mobs.size())
 		{
-			var b = bullets.get(i);
+			var b = mobs.get(i);
 			b.update(dt);
 
 			if (b.rect.collide(self.obj.rect)) {
 				print("collision");
-				bullets.remove_at(i);
+				mobs.remove_at(i);
 				i = i - 1;
 			}
 
+			i = i+1;
+		}
+
+		i = 0;
+		var bullets = self.bullets;
+		while(i<bullets.size())
+		{
+			bullets.get(i).update(dt);
 			i = i+1;
 		}
 	}
@@ -235,14 +302,23 @@ class Game
 	def draw()
 	{
 		self.obj.draw();
-		var bullets = self.bullets;
-
+		var mobs = self.mobs;
 		var i = 0;
+		while(i<mobs.size())
+		{
+			mobs.get(i).draw();
+			i = i+1;
+		}
+
+		i = 0;
+		var bullets = self.bullets;
 		while(i<bullets.size())
 		{
 			bullets.get(i).draw();
 			i = i+1;
 		}
+
+		self.cursor.draw();
 	}
 
 	def doSomething(bullet)
