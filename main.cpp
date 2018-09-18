@@ -8,6 +8,10 @@
 #include <sstream>
 #include <unordered_map>
 
+#define SCREEN_WIDTH (200)
+#define SCREEN_HEIGHT (120)
+#define SCREEN_SCALE (4)
+
 loris::Class* imageClass;
 SDL_Surface* screen;
 SDL_Renderer *renderer;
@@ -115,6 +119,8 @@ public:
 		prevMouseX = curMouseX;
 		prevMouseY = curMouseY;
 		SDL_GetMouseState(&curMouseX, &curMouseY);
+		curMouseX = curMouseX / SCREEN_SCALE;
+		curMouseY = curMouseY / SCREEN_SCALE;
 	}
 
 	static bool IsKeyDown(int index)
@@ -366,6 +372,7 @@ class ScriptManager
 public:
 	ScriptManager()
 	{
+		game = nullptr;
 	}
 
 	void AddClass(loris::Class* cls)
@@ -515,7 +522,10 @@ int main(int argc, char *argv[])
 		.Build();
 
 	//add scripts
-	scriptMan.AddSourceFile("assets/game.ls");
+	//scriptMan.AddSourceFile("assets/game.ls");
+	for (int i=1; i < argc; i++) {
+		scriptMan.AddSourceFile(argv[i]);
+	}
 
 	//add classes
 	scriptMan.AddClass(assetsClass);
@@ -532,14 +542,19 @@ int main(int argc, char *argv[])
 	"Game",
 	SDL_WINDOWPOS_UNDEFINED,
 	SDL_WINDOWPOS_UNDEFINED,
-	640,
-	480,
+	SCREEN_WIDTH * SCREEN_SCALE,
+	SCREEN_HEIGHT * SCREEN_SCALE,
 	0
 	);
+	
+	SDL_Rect windowRect = { 0, 0, SCREEN_WIDTH*SCREEN_SCALE, SCREEN_HEIGHT*SCREEN_SCALE };
 
 	IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG | IMG_INIT_TIF | IMG_INIT_WEBP);
 
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
+	auto renderTarget = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
+		SDL_TEXTUREACCESS_TARGET, SCREEN_WIDTH, SCREEN_HEIGHT);
+	
 	SDL_SetRenderDrawColor(renderer,255, 255, 255, SDL_ALPHA_OPAQUE);
 
 	Input::Init();
@@ -576,14 +591,24 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		
+
 		int curTime = SDL_GetTicks();
 		float dt = (curTime - lastTime) / 1000.0f;
 		lastTime = curTime;
 
 		scriptMan.RunUpdate(dt);
 
+		// set screen texture
+		SDL_SetRenderTarget(renderer, renderTarget);
 		SDL_RenderClear(renderer);
 		scriptMan.RunDraw();
+
+		// render to actual screen
+		// detach render target
+		SDL_SetRenderTarget(renderer, nullptr);
+		SDL_RenderClear(renderer);
+		SDL_RenderCopy(renderer, renderTarget, nullptr, &windowRect);
 		SDL_RenderPresent(renderer);
 	}
 
