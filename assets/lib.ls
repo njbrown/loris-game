@@ -22,9 +22,27 @@ class Vector2
 		self.y = self.y + other.y;
 	}
 
+    def normalize()
+    {
+        var scale = sqrt((self.x * self.x) + (self.y * self.y));
+        self.x = self.x / scale;
+        self.y = self.y / scale;
+    }
+
+    def scale(sx, sy)
+    {
+        self.x = self.x * sx;
+        self.y = self.y * sy;
+    }
+
 	static def add(a, b)
 	{
 		return new Vector2(a.x + b.x, a.y + b);
+	}
+
+    static def sub(a, b)
+	{
+		return new Vector2(a.x - b.x, a.y - b.y);
 	}
 }
 

@@ -25,27 +25,26 @@ class Shooter extends GameObject
 	def update(dt)
 	{
 		var p = self.pos;
+		var speed = self.moveSpeed * dt;
 
 		if(Input.isKeyDown(Keys.A))
 		{
-			p.x = p.x-50*dt;
-			//self.image = self.leftImage;
+			p.x = p.x - speed;
 		}
 
 		if(Input.isKeyDown(Keys.D))
 		{
-			p.x = p.x+50*dt;
-			//self.image = self.rightImage;
+			p.x = p.x + speed;
 		}
 
 		if(Input.isKeyDown(Keys.W))
 		{
-			p.y = p.y-50*dt;
+			p.y = p.y - speed;
 		}
 
 		if(Input.isKeyDown(Keys.S))
 		{
-			p.y = p.y+50*dt;
+			p.y = p.y + speed;
 		}
 
 		// update rect
@@ -116,7 +115,7 @@ class Game
 			self.mobs.add(slime);
 
 			i = i+1;
-		}
+		}		
 	}
 
 	def update(dt)
@@ -126,10 +125,12 @@ class Game
 		if (Input.isMousePressed(Mouse.Left)) {
 			var bt = new Bullet();
 			bt.pos = self.obj.pos.copy();
-			bt.dir = new Vector2(10,0);
+			bt.dir = Vector2.sub(new Vector2(Input.getMouseX(), Input.getMouseY()), bt.pos);
+			bt.dir.normalize();
+			bt.dir.scale(280,280);
 
 			self.bullets.add(bt);
-			print("firing bullet", bt);
+			print("firing bullet");
 		}
 
 		var mobs = self.mobs;
