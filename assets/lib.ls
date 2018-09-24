@@ -94,21 +94,24 @@ class Sprite
 		self.index = 0;
 		var images = array();
 		var i = 0;
+		//print(imagePaths.size());
 		while(i < imagePaths.size()) {
 			images.add(Assets.loadImage(imagePaths.get(i)));
 			
 			i = i + 1;
 		}
 
+		self.speed = 1;
 		self.images = images;
 		self.image = null;
         self.frameTime = 1;
         self.time = 0;
+		self.rot = 0;
 	}
 
 	def update(dt)
 	{
-		self.time = self.time + dt;
+		self.time = self.time + dt * self.speed;
 
         var i = floor(mod(self.time / self.frameTime, self.images.size()));
         self.image = self.images.get(i);
