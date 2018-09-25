@@ -86,19 +86,32 @@ class Rect
 	}
 }
 
+class SpriteFlipMode
+{
+	static var None = 0;
+	static var Vertical = 1;
+	static var Horizontal = 2;
+	static var Both = 3;
+}
+
 class Sprite
 {
 	// image paths should be an array of strings
 	Sprite(imagePaths)
 	{
+		self.centerX = 0;
+		self.centerY = 0;
 		self.index = 0;
 		var images = array();
 		var i = 0;
-		//print(imagePaths.size());
+		
 		while(i < imagePaths.size()) {
-			images.add(Assets.loadImage(imagePaths.get(i)));
+			var img = Assets.loadImage(imagePaths.get(i));
+			images.add(img);
 			
 			i = i + 1;
+			self.centerX = img.width / 2;
+			self.centerY = img.height / 2;
 		}
 
 		self.speed = 1;
@@ -107,6 +120,8 @@ class Sprite
         self.frameTime = 1;
         self.time = 0;
 		self.rot = 0;
+		
+		self.flipMode = SpriteFlipMode.None;
 	}
 
 	def update(dt)
@@ -120,7 +135,8 @@ class Sprite
 	def draw(x,y)
 	{
 		if (self.image != null)
-			Canvas.drawImage(self.image, x, y);
+			//Canvas.drawImage(self.image, x, y);
+			Canvas.drawImageEx(self.image, x, y, 1, 1, self.rot, self.centerX, self.centerY, self.flipMode);
 	}
 }
 

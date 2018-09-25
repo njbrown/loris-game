@@ -194,6 +194,8 @@ Value Assets_LoadImage(VirtualMachine* vm, Object* self)
 	//create image Object and assign img to data
 	Object* imgObject = vm->CreateObject(imageClass);
 	imgObject->data = img;
+	imgObject->SetAttrib("width", Value::CreateNumber(img->width));
+	imgObject->SetAttrib("height", Value::CreateNumber(img->height));
 
 	//return obj
 	return Value::CreateObject(imgObject);
@@ -241,6 +243,64 @@ Value Canvas_DrawImage(VirtualMachine* vm, Object* self)
 	//SDL_BlitSurface(img->sprite, NULL, screen, &rect);
 	SDL_RenderCopy(renderer, img->sprite, nullptr, &rect);
 
+	return Value::CreateNull();
+}
+
+//Canvas.drawImageEx(x,y,scaleX,scaleY,rot,centerX, centerY, flip)
+Value Canvas_DrawImageEx(VirtualMachine* vm, Object* self)
+{
+	//get object
+	EXPECT_OBJECT(vm, 0);// image
+	EXPECT_NUMBER(vm, 1);// x
+	EXPECT_NUMBER(vm, 2);// y
+	EXPECT_NUMBER(vm, 3);// scaleX
+	EXPECT_NUMBER(vm, 4);// scaleY
+	EXPECT_NUMBER(vm, 5);// rot
+	EXPECT_NUMBER(vm, 6);// centerX
+	EXPECT_NUMBER(vm, 7);// centerY
+	EXPECT_NUMBER(vm, 8);// flip
+
+	Object* obj = vm->GetArg(0).AsObject();
+	if (obj->typeName != "Image")
+	{
+		vm->RaiseError("you can only render an image");
+		return Value::CreateNull();
+	}
+	//todo: validate obj->data is not null
+
+	int x = (int)vm->GetArg(1).AsNumber();
+	int y = (int)vm->GetArg(2).AsNumber();
+	int scaleX = (int)vm->GetArg(3).AsNumber();
+	int scaleY = (int)vm->GetArg(4).AsNumber();
+	float rot = (int)vm->GetArg(5).AsNumber();
+	int centerX = (int)vm->GetArg(6).AsNumber();
+	int centerY = (int)vm->GetArg(7).AsNumber();
+	int flip = (int)vm->GetArg(8).AsNumber();
+
+	//blit!
+	Image* img = (Image*)obj->data;
+	SDL_Rect rect;
+	rect.x = x;
+	rect.y = y;
+	rect.w = img->width;
+	rect.h = img->height;
+
+	// flip mode
+	SDL_RendererFlip flipMode = SDL_RendererFlip::SDL_FLIP_NONE;
+	if (flip == 1)
+		flipMode = SDL_RendererFlip::SDL_FLIP_VERTICAL;
+	else if (flip == 2)
+		flipMode = SDL_RendererFlip::SDL_FLIP_HORIZONTAL;
+	else if (flip == 3)
+		flipMode = (SDL_RendererFlip)(SDL_RendererFlip::SDL_FLIP_VERTICAL | SDL_RendererFlip::SDL_FLIP_HORIZONTAL);
+
+
+	//SDL_BlitSurface(img->sprite, NULL, screen, &rect);
+	//SDL_RenderCopy(renderer, img->sprite, nullptr, &rect);
+	SDL_Point point = { centerX, centerY };
+	if (SDL_RenderCopyEx(renderer, img->sprite, nullptr, &rect, rot, &point, flipMode) != 0)
+		std::cout << "SDL Error: " << SDL_GetError();
+	//std::cout << "drawing";
 	return Value::CreateNull();
 }
 
@@ -494,6 +554,7 @@ int main(int argc, char *argv[])
 	Class* gfxClass = loris::CreateClass("Canvas")
 		.StaticMethod("drawTestRect", Canvas_DrawTestRect)/* void drawImage(img,x,y); */
 		.StaticMethod("drawImage", Canvas_DrawImage)/* void drawImage(img,x,y); */
+		.StaticMethod("drawImageEx", Canvas_DrawImageEx)/* void drawImage(image,x,y,scaleX,scaleY,rot,centerX, centerY, flip); */
 		.Build();
 
 	Class* assetsClass = loris::CreateClass("Assets")
